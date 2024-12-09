@@ -11,6 +11,7 @@
 - [Implementation Examples](#implementation-examples)
 - [Real-World Application Examples](#real-world-application-examples)
 - [Detailed Component Analysis](#detailed-component-analysis)
+- [Message Acknowledgment Modes](#message-acknowledgment-modes)
 
 ## Overview
 
@@ -720,6 +721,222 @@ sequenceDiagram
    - Consumer receives message
    - Processes message
    - Sends acknowledgment
+
+## Message Acknowledgment Modes
+
+### Understanding Acknowledgments
+```mermaid
+sequenceDiagram
+    participant P as Producer
+    participant Q as Queue
+    participant C as Consumer
+    
+    P->>Q: Publish Message
+    Q->>C: Deliver Message
+    
+    alt Auto Acknowledgment
+        C->>Q: Auto-Ack (Immediate)
+    else Manual Acknowledgment
+        Note over C: Process Message
+        C->>Q: Basic.Ack
+    else Negative Acknowledgment
+        Note over C: Processing Failed
+        C->>Q: Basic.Nack
+        Q->>C: Requeue Message
+    else Reject
+        Note over C: Invalid Message
+        C->>Q: Basic.Reject
+        Q-->>Q: Move to DLX
+    end
+```
+
+### Acknowledgment Types
+
+1. **Auto Acknowledgment (auto_ack=True)**
+   ```mermaid
+   flowchart LR
+       Q[Queue] -->|"1. Deliver"| C[Consumer]
+       C -->|"2. Auto-Ack"| Q
+       
+       classDef queue fill:#bbf,stroke:#333;
+       classDef consumer fill:#bfb,stroke:#333;
+       
+       class Q queue;
+       class C consumer;
+   ```
+   - Messages are acknowledged immediately upon delivery
+   - No guarantee of processing
+   - Highest performance but risky
+   - Use case: When message loss is acceptable
+
+2. **Manual Acknowledgment (auto_ack=False)**
+   ```mermaid
+   flowchart LR
+       Q[Queue] -->|"1. Deliver"| C[Consumer]
+       C -->|"2. Process"| C
+       C -->|"3. Basic.Ack"| Q
+       
+       classDef queue fill:#bbf,stroke:#333;
+       classDef consumer fill:#bfb,stroke:#333;
+       
+       class Q queue;
+       class C consumer;
+   ```
+   - Consumer explicitly acknowledges messages
+   - Guarantees message processing
+   - More control but lower throughput
+   - Use case: When message processing must be guaranteed
+
+3. **Negative Acknowledgment (Basic.Nack)**
+   ```mermaid
+   flowchart LR
+       Q[Queue] -->|"1. Deliver"| C[Consumer]
+       C -->|"2. Process Failed"| C
+       C -->|"3. Basic.Nack"| Q
+       Q -->|"4. Requeue"| Q
+       
+       classDef queue fill:#bbf,stroke:#333;
+       classDef consumer fill:#bfb,stroke:#333;
+       
+       class Q queue;
+       class C consumer;
+   ```
+   - Indicates processing failure
+   - Can reject multiple messages
+   - Option to requeue messages
+   - Use case: Batch processing failures
+
+4. **Reject (Basic.Reject)**
+   ```mermaid
+   flowchart LR
+       Q[Queue] -->|"1. Deliver"| C[Consumer]
+       C -->|"2. Invalid Message"| C
+       C -->|"3. Basic.Reject"| Q
+       Q -->|"4. Move to DLX"| D[Dead Letter Exchange]
+       
+       classDef queue fill:#bbf,stroke:#333;
+       classDef consumer fill:#bfb,stroke:#333;
+       classDef dlx fill:#ffa,stroke:#333;
+       
+       class Q queue;
+       class C consumer;
+       class D dlx;
+   ```
+   - Rejects a single message
+   - Option to requeue or discard
+   - Can move to Dead Letter Exchange
+   - Use case: Invalid or unprocessable messages
+
+### Best Practices for Acknowledgments
+
+1. **Choose the Right Mode**
+   ```mermaid
+   flowchart TD
+       A[Message Received] --> B{Critical Data?}
+       B -->|Yes| C[Manual Ack]
+       B -->|No| D[Auto Ack]
+       C --> E{Processing Success?}
+       E -->|Yes| F[Basic.Ack]
+       E -->|No| G{Retryable?}
+       G -->|Yes| H[Basic.Nack + Requeue]
+       G -->|No| I[Basic.Reject to DLX]
+       
+       classDef decision fill:#bbf,stroke:#333;
+       classDef action fill:#bfb,stroke:#333;
+       classDef result fill:#ffa,stroke:#333;
+       
+       class B,E,G decision;
+       class A,C,D action;
+       class F,H,I result;
+   ```
+
+2. **Prefetch Settings**
+   - Set appropriate prefetch count
+   - Balance throughput and memory usage
+   - Consider processing time
+   ```python
+   # Example prefetch configuration
+   channel.basic_qos(prefetch_count=10)
+   ```
+
+3. **Error Handling**
+   ```python
+   try:
+       # Process message
+       process_message(message)
+       channel.basic_ack(delivery_tag=method.delivery_tag)
+   except RetryableError:
+       # Requeue for retry
+       channel.basic_nack(
+           delivery_tag=method.delivery_tag,
+           requeue=True
+       )
+   except NonRetryableError:
+       # Send to DLX
+       channel.basic_reject(
+           delivery_tag=method.delivery_tag,
+           requeue=False
+       )
+   ```
+
+4. **Monitoring and Alerts**
+   - Track unacknowledged messages
+   - Monitor redelivery counts
+   - Set alerts for high rejection rates
+
+### Common Scenarios and Solutions
+
+1. **Long Processing Times**
+   ```python
+   # Increase visibility timeout
+   channel.basic_qos(prefetch_count=1)
+   
+   def callback(ch, method, properties, body):
+       try:
+           # Long-running process
+           process_large_file(body)
+           ch.basic_ack(delivery_tag=method.delivery_tag)
+       except Exception:
+           ch.basic_nack(delivery_tag=method.delivery_tag)
+   ```
+
+2. **Batch Processing**
+   ```python
+   # Accumulate messages and acknowledge as batch
+   messages = []
+   
+   def callback(ch, method, properties, body):
+       messages.append((method.delivery_tag, body))
+       if len(messages) >= BATCH_SIZE:
+           try:
+               process_batch(messages)
+               # Acknowledge all messages in batch
+               ch.basic_ack(
+                   delivery_tag=messages[-1][0],
+                   multiple=True
+               )
+           except Exception:
+               # Negative acknowledge all
+               ch.basic_nack(
+                   delivery_tag=messages[-1][0],
+                   multiple=True,
+                   requeue=True
+               )
+           finally:
+               messages.clear()
+   ```
+
+3. **Dead Letter Handling**
+   ```python
+   # Configure DLX
+   channel.queue_declare(
+       queue='main_queue',
+       arguments={
+           'x-dead-letter-exchange': 'dlx',
+           'x-dead-letter-routing-key': 'failed'
+       }
+   )
+   ```
 
 ---
 For more information, visit the [official RabbitMQ documentation](https://www.rabbitmq.com/documentation.html).
