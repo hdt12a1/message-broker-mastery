@@ -10,6 +10,7 @@
 - [Common Use Cases](#common-use-cases)
 - [Implementation Examples](#implementation-examples)
 - [Real-World Application Examples](#real-world-application-examples)
+- [Detailed Component Analysis](#detailed-component-analysis)
 
 ## Overview
 
@@ -126,9 +127,19 @@ graph LR
 - Good for direct point-to-point messaging
 ```mermaid
 graph LR
-    P[Producer] -->|routing_key=payment| E[Direct Exchange]
-    E -->|binding_key=payment| Q[Payment Queue]
+    P[Producer] -->|"routing_key=payment"| E[Direct Exchange]
+    E -->|"binding_key=payment"| Q[Payment Queue]
     Q --> C[Consumer]
+    
+    classDef producer fill:#f9f,stroke:#333;
+    classDef exchange fill:#bbf,stroke:#333;
+    classDef queue fill:#bfb,stroke:#333;
+    classDef consumer fill:#ffa,stroke:#333;
+    
+    class P producer;
+    class E exchange;
+    class Q queue;
+    class C consumer;
 ```
 
 ### Topic Exchange
@@ -136,9 +147,18 @@ graph LR
 - Supports wildcards (* and #)
 ```mermaid
 graph LR
-    P[Producer] -->|app.error.critical| E[Topic Exchange]
-    E -->|app.*.critical| Q1[Critical Queue]
-    E -->|app.error.*| Q2[Error Queue]
+    P[Producer] -->|"app.error.critical"| E[Topic Exchange]
+    E -->|"app.*.critical"| Q1[Critical Queue]
+    E -->|"app.error.*"| Q2[Error Queue]
+    
+    classDef producer fill:#f9f,stroke:#333;
+    classDef exchange fill:#bbf,stroke:#333;
+    classDef queue fill:#bfb,stroke:#333;
+    
+    class P producer;
+    class E exchange;
+    class Q1 queue;
+    class Q2 queue;
 ```
 
 ### Fanout Exchange
@@ -146,10 +166,20 @@ graph LR
 - Ignores routing keys
 ```mermaid
 graph LR
-    P[Producer] -->|message| E[Fanout Exchange]
-    E --> Q1[Queue 1]
-    E --> Q2[Queue 2]
-    E --> Q3[Queue 3]
+    P[Producer] -->|"message"| E[Fanout Exchange]
+    E -->|"broadcast"| Q1[Queue 1]
+    E -->|"broadcast"| Q2[Queue 2]
+    E -->|"broadcast"| Q3[Queue 3]
+    
+    classDef producer fill:#f9f,stroke:#333;
+    classDef exchange fill:#bbf,stroke:#333;
+    classDef queue fill:#bfb,stroke:#333;
+    
+    class P producer;
+    class E exchange;
+    class Q1 queue;
+    class Q2 queue;
+    class Q3 queue;
 ```
 
 ### Headers Exchange
@@ -255,36 +285,43 @@ channel.start_consuming()
 ```mermaid
 graph TD
     subgraph Frontend
-        A[Web UI] -->|Place Order| B[Order Service]
+        A[Web UI] -->|"Place Order"| B[Order Service]
     end
     
     subgraph Message Broker
-        B -->|Publish| C[RabbitMQ]
+        B -->|"Publish"| C[RabbitMQ]
     end
     
     subgraph Backend Services
-        C -->|Consume| D[Payment Service]
-        C -->|Consume| E[Inventory Service]
-        C -->|Consume| F[Notification Service]
-        C -->|Consume| G[Shipping Service]
+        C -->|"Consume"| D[Payment Service]
+        C -->|"Consume"| E[Inventory Service]
+        C -->|"Consume"| F[Notification Service]
+        C -->|"Consume"| G[Shipping Service]
         
-        D -->|Payment Processed| C
-        E -->|Stock Updated| C
-        G -->|Shipment Created| C
+        D -->|"Payment Processed"| C
+        E -->|"Stock Updated"| C
+        G -->|"Shipment Created"| C
     end
     
     subgraph Notifications
-        F -->|Email| H[Customer Email]
-        F -->|SMS| I[Customer SMS]
+        F -->|"Email"| H[Customer Email]
+        F -->|"SMS"| I[Customer SMS]
     end
 
-    style A fill:#f9f,stroke:#333
-    style B fill:#bbf,stroke:#333
-    style C fill:#bfb,stroke:#333
-    style D fill:#ffa,stroke:#333
-    style E fill:#ffa,stroke:#333
-    style F fill:#ffa,stroke:#333
-    style G fill:#ffa,stroke:#333
+    classDef frontend fill:#f9f,stroke:#333;
+    classDef service fill:#bbf,stroke:#333;
+    classDef broker fill:#bfb,stroke:#333;
+    classDef notification fill:#ffa,stroke:#333;
+    
+    class A frontend;
+    class B service;
+    class C broker;
+    class D service;
+    class E service;
+    class F service;
+    class G service;
+    class H notification;
+    class I notification;
 ```
 
 ### 2. Real-time Analytics Pipeline
@@ -309,27 +346,32 @@ graph LR
         E[Analytics Dashboard]
     end
 
-    A1 -->|Events| B
-    A2 -->|Events| B
-    A3 -->|Events| B
-    B -->|Process| C1
-    B -->|Process| C2
-    B -->|Process| C3
-    C1 -->|Store| D1
-    C2 -->|Store| D1
-    C3 -->|Store| D2
+    A1 -->|"Events"| B
+    A2 -->|"Events"| B
+    A3 -->|"Events"| B
+    B -->|"Process"| C1
+    B -->|"Process"| C2
+    B -->|"Process"| C3
+    C1 -->|"Store"| D1
+    C2 -->|"Store"| D1
+    C3 -->|"Store"| D2
     D1 --> E
     D2 --> E
 
-    style A1 fill:#f9f,stroke:#333
-    style A2 fill:#f9f,stroke:#333
-    style A3 fill:#f9f,stroke:#333
-    style B fill:#bfb,stroke:#333
-    style C1 fill:#bbf,stroke:#333
-    style C2 fill:#bbf,stroke:#333
-    style C3 fill:#bbf,stroke:#333
-    style D1 fill:#ffa,stroke:#333
-    style D2 fill:#ffa,stroke:#333
+    classDef source fill:#f9f,stroke:#333;
+    classDef broker fill:#bfb,stroke:#333;
+    classDef processor fill:#bbf,stroke:#333;
+    classDef storage fill:#ffa,stroke:#333;
+    
+    class A1 source;
+    class A2 source;
+    class A3 source;
+    class B broker;
+    class C1 processor;
+    class C2 processor;
+    class C3 processor;
+    class D1 storage;
+    class D2 storage;
 ```
 
 ### 3. Microservices Communication in Banking
@@ -340,7 +382,7 @@ graph TD
         A2[Web App]
         A3[ATM]
     end
-
+    
     subgraph API Gateway
         B[Gateway Service]
     end
@@ -361,27 +403,32 @@ graph TD
         E2[Partner Banks]
     end
 
-    A1 --> B
-    A2 --> B
-    A3 --> B
-    B -->|Messages| C
-    C -->|Auth| D1
-    C -->|Process| D2
-    C -->|Account| D3
-    C -->|Check| D4
-    D2 -->|External| E1
-    D2 -->|Transfer| E2
-    D4 -->|Alert| C
+    A1 -->|"Request"| B
+    A2 -->|"Request"| B
+    A3 -->|"Request"| B
+    B -->|"Messages"| C
+    C -->|"Auth"| D1
+    C -->|"Process"| D2
+    C -->|"Account"| D3
+    C -->|"Check"| D4
+    D2 -->|"External"| E1
+    D2 -->|"Transfer"| E2
+    D4 -->|"Alert"| C
 
-    style A1 fill:#f9f,stroke:#333
-    style A2 fill:#f9f,stroke:#333
-    style A3 fill:#f9f,stroke:#333
-    style B fill:#bbf,stroke:#333
-    style C fill:#bfb,stroke:#333
-    style D1 fill:#ffa,stroke:#333
-    style D2 fill:#ffa,stroke:#333
-    style D3 fill:#ffa,stroke:#333
-    style D4 fill:#ffa,stroke:#333
+    classDef client fill:#f9f,stroke:#333;
+    classDef gateway fill:#bbf,stroke:#333;
+    classDef broker fill:#bfb,stroke:#333;
+    classDef service fill:#ffa,stroke:#333;
+    
+    class A1 client;
+    class A2 client;
+    class A3 client;
+    class B gateway;
+    class C broker;
+    class D1 service;
+    class D2 service;
+    class D3 service;
+    class D4 service;
 ```
 
 ### Benefits Demonstrated in These Flows:
@@ -410,6 +457,269 @@ graph TD
    - Centralized message tracking
    - Flow control and rate limiting
    - Error handling and dead letter queues
+
+## Detailed Component Analysis
+
+### Producers in Detail
+```mermaid
+flowchart LR
+    A[Producer] -->|"1. Create Message"| B[Message]
+    B -->|"2. Set Properties"| C[Message Properties]
+    C -->|"3. Publish"| D[Exchange]
+    
+    subgraph Message_Flow
+        B
+        C
+    end
+    
+    classDef producer fill:#f9f,stroke:#333;
+    classDef message fill:#bfb,stroke:#333;
+    classDef properties fill:#bbf,stroke:#333;
+    classDef exchange fill:#ffa,stroke:#333;
+    
+    class A producer;
+    class B message;
+    class C properties;
+    class D exchange;
+```
+
+#### Producer Characteristics
+1. **Message Creation**
+   - Constructs message payload
+   - Sets message content type (JSON, XML, etc.)
+   - Defines message encoding
+
+2. **Message Properties**
+   - `delivery_mode`: Persistence (1 = non-persistent, 2 = persistent)
+   - `content_type`: Format of the message (application/json, text/plain)
+   - `reply_to`: Queue name for response messages
+   - `correlation_id`: Links messages in request-reply pattern
+   - `message_id`: Unique identifier
+   - `timestamp`: Message creation time
+   - `expiration`: Message TTL
+
+3. **Publishing Options**
+   - `mandatory`: Ensures message is routable
+   - `immediate`: Requires immediate consumer
+   - `routing_key`: Determines message routing
+
+### Exchanges in Detail
+```mermaid
+graph TD
+    P[Producer] -->|"Publish"| E{Exchange}
+    E -->|"Direct"| Q1[Queue 1]
+    E -->|"Topic"| Q2[Queue 2]
+    E -->|"Fanout"| Q3[Queue 3]
+    E -->|"Headers"| Q4[Queue 4]
+    
+    subgraph Exchange Properties
+        EP1[Name]
+        EP2[Type]
+        EP3[Durability]
+        EP4[Auto-delete]
+    end
+    
+    classDef producer fill:#f9f,stroke:#333;
+    classDef exchange fill:#bbf,stroke:#333;
+    classDef queue fill:#bfb,stroke:#333;
+    
+    class P producer;
+    class E exchange;
+    class Q1 queue;
+    class Q2 queue;
+    class Q3 queue;
+    class Q4 queue;
+```
+
+#### Exchange Types and Routing
+1. **Direct Exchange**
+   ```mermaid
+   graph LR
+       P[Producer] -->|"routing_key=error"| E[Direct Exchange]
+       E -->|"binding_key=error"| Q1[Error Queue]
+       E -->|"binding_key=info"| Q2[Info Queue]
+       
+       classDef producer fill:#f9f,stroke:#333;
+       classDef exchange fill:#bbf,stroke:#333;
+       classDef queue fill:#bfb,stroke:#333;
+       
+       class P producer;
+       class E exchange;
+       class Q1 queue;
+       class Q2 queue;
+   ```
+   - Exact matching of routing key
+   - One-to-one routing
+   - Use case: Direct message routing
+
+2. **Topic Exchange**
+   ```mermaid
+   graph LR
+       P[Producer] -->|"usa.weather.nyc"| E[Topic Exchange]
+       E -->|"usa.weather.*"| Q1[NYC Weather]
+       E -->|"#.weather.#"| Q2[All Weather]
+       E -->|"usa.#"| Q3[USA Updates]
+       
+       classDef producer fill:#f9f,stroke:#333;
+       classDef exchange fill:#bbf,stroke:#333;
+       classDef queue fill:#bfb,stroke:#333;
+       
+       class P producer;
+       class E exchange;
+       class Q1 queue;
+       class Q2 queue;
+       class Q3 queue;
+   ```
+   - Pattern-based routing
+   - Wildcards: * (one word), # (zero or more words)
+   - Use case: Category-based routing
+
+3. **Fanout Exchange**
+   ```mermaid
+   graph LR
+       P[Producer] -->|"message"| E[Fanout Exchange]
+       E -->|"broadcast"| Q1[Queue 1]
+       E -->|"broadcast"| Q2[Queue 2]
+       E -->|"broadcast"| Q3[Queue 3]
+       
+       classDef producer fill:#f9f,stroke:#333;
+       classDef exchange fill:#bbf,stroke:#333;
+       classDef queue fill:#bfb,stroke:#333;
+       
+       class P producer;
+       class E exchange;
+       class Q1 queue;
+       class Q2 queue;
+       class Q3 queue;
+   ```
+   - Broadcasts to all bound queues
+   - Ignores routing keys
+   - Use case: Broadcast messages
+
+### Queues in Detail
+```mermaid
+graph TD
+    subgraph Queue Properties
+        Q1[Name]
+        Q2[Durable]
+        Q3[Exclusive]
+        Q4[Auto-delete]
+        Q5[Arguments]
+    end
+    
+    subgraph Queue Features
+        F1[Message TTL]
+        F2[Queue Length Limit]
+        F3[Dead Letter Exchange]
+        F4[Priority Queue]
+    end
+    
+    Q5 --> F1
+    Q5 --> F2
+    Q5 --> F3
+    Q5 --> F4
+```
+
+#### Queue Characteristics
+1. **Properties**
+   - `name`: Queue identifier
+   - `durable`: Survives broker restart
+   - `exclusive`: Used by only one connection
+   - `auto-delete`: Removed when last consumer unsubscribes
+
+2. **Arguments**
+   - `x-message-ttl`: Message time-to-live
+   - `x-max-length`: Maximum queue length
+   - `x-dead-letter-exchange`: DLX for rejected messages
+   - `x-max-priority`: Enable priority queue
+
+3. **Message Ordering**
+   - FIFO by default
+   - Priority queues available
+   - Per-message TTL affects order
+
+### Consumers in Detail
+```mermaid
+graph TD
+    subgraph Consumer Properties
+        C1[Prefetch Count]
+        C2[Acknowledgment Mode]
+        C3[Exclusive]
+    end
+    
+    subgraph Processing Steps
+        P1[Receive Message]
+        P2[Process Message]
+        P3[Send Acknowledgment]
+    end
+    
+    Q[Queue] --> P1
+    P1 --> P2
+    P2 --> P3
+    P3 -->|"ack/nack"| Q
+    
+    classDef queue fill:#bbf,stroke:#333;
+    classDef processing fill:#bfb,stroke:#333;
+    
+    class Q queue;
+    class P1 processing;
+    class P2 processing;
+    class P3 processing;
+```
+
+#### Consumer Features
+1. **Acknowledgment Modes**
+   - `auto_ack`: Automatic acknowledgment
+   - `manual_ack`: Manual acknowledgment
+   - `reject`: Reject and requeue
+   - `reject_no_requeue`: Reject without requeue
+
+2. **Prefetch Settings**
+   - Controls number of unacknowledged messages
+   - Prevents consumer overload
+   - Enables fair dispatch
+
+3. **Consumer Options**
+   - Exclusive consumers
+   - Consumer priorities
+   - Consumer cancellation notifications
+
+### Message Flow Example
+```mermaid
+sequenceDiagram
+    participant P as Producer
+    participant E as Exchange
+    participant Q as Queue
+    participant C as Consumer
+    
+    P->>E: 1. Publish Message
+    E->>Q: 2. Route Message
+    Q->>C: 3. Deliver Message
+    C->>Q: 4. Acknowledge
+    
+    Note over P,C: Complete Message Flow
+```
+
+#### Message Lifecycle
+1. **Publication**
+   - Producer creates message
+   - Sets message properties
+   - Publishes to exchange
+
+2. **Routing**
+   - Exchange receives message
+   - Applies routing rules
+   - Forwards to matching queues
+
+3. **Queueing**
+   - Queue stores message
+   - Applies queue policies
+   - Manages message lifecycle
+
+4. **Consumption**
+   - Consumer receives message
+   - Processes message
+   - Sends acknowledgment
 
 ---
 For more information, visit the [official RabbitMQ documentation](https://www.rabbitmq.com/documentation.html).
