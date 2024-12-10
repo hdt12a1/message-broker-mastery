@@ -520,16 +520,17 @@ graph TD
         EP4[Auto-delete]
     end
     
-    classDef producer fill:#f9f,stroke:#333;
-    classDef exchange fill:#bbf,stroke:#333;
-    classDef queue fill:#bfb,stroke:#333;
+    subgraph Exchange Features
+        F1[Message TTL]
+        F2[Queue Length Limit]
+        F3[Dead Letter Exchange]
+        F4[Priority Queue]
+    end
     
-    class P producer;
-    class E exchange;
-    class Q1 queue;
-    class Q2 queue;
-    class Q3 queue;
-    class Q4 queue;
+    Q4 --> F1
+    Q4 --> F2
+    Q4 --> F3
+    Q4 --> F4
 ```
 
 #### Exchange Types and Routing
@@ -758,11 +759,11 @@ sequenceDiagram
        Q[Queue] -->|"1. Deliver"| C[Consumer]
        C -->|"2. Auto-Ack"| Q
        
-       classDef queue fill:#bbf,stroke:#333;
-       classDef consumer fill:#bfb,stroke:#333;
+       classDef queue fill:#bbf,stroke:#333
+       classDef consumer fill:#bfb,stroke:#333
        
-       class Q queue;
-       class C consumer;
+       class Q queue
+       class C consumer
    ```
    - Messages are acknowledged immediately upon delivery
    - No guarantee of processing
@@ -776,11 +777,11 @@ sequenceDiagram
        C -->|"2. Process"| C
        C -->|"3. Basic.Ack"| Q
        
-       classDef queue fill:#bbf,stroke:#333;
-       classDef consumer fill:#bfb,stroke:#333;
+       classDef queue fill:#bbf,stroke:#333
+       classDef consumer fill:#bfb,stroke:#333
        
-       class Q queue;
-       class C consumer;
+       class Q queue
+       class C consumer
    ```
    - Consumer explicitly acknowledges messages
    - Guarantees message processing
@@ -795,11 +796,11 @@ sequenceDiagram
        C -->|"3. Basic.Nack"| Q
        Q -->|"4. Requeue"| Q
        
-       classDef queue fill:#bbf,stroke:#333;
-       classDef consumer fill:#bfb,stroke:#333;
+       classDef queue fill:#bbf,stroke:#333
+       classDef consumer fill:#bfb,stroke:#333
        
-       class Q queue;
-       class C consumer;
+       class Q queue
+       class C consumer
    ```
    - Indicates processing failure
    - Can reject multiple messages
@@ -809,18 +810,22 @@ sequenceDiagram
 4. **Reject (Basic.Reject)**
    ```mermaid
    flowchart LR
-       Q[Queue] -->|"1. Deliver"| C[Consumer]
-       C -->|"2. Invalid Message"| C
+       Q[Queue] -->|"1. Deliver Message"| C[Consumer]
+       C -->|"2. Process Failed"| C
        C -->|"3. Basic.Reject"| Q
-       Q -->|"4. Move to DLX"| D[Dead Letter Exchange]
+       Q -->|"4. Send to DLX"| DLX[Dead Letter Exchange]
        
-       classDef queue fill:#bbf,stroke:#333;
-       classDef consumer fill:#bfb,stroke:#333;
-       classDef dlx fill:#ffa,stroke:#333;
+       subgraph Message_Flow
+           C
+       end
        
-       class Q queue;
-       class C consumer;
-       class D dlx;
+       classDef queue fill:#bbf,stroke:#333
+       classDef consumer fill:#bfb,stroke:#333
+       classDef dlx fill:#ffa,stroke:#333
+       
+       class Q queue
+       class C consumer
+       class DLX dlx
    ```
    - Rejects a single message
    - Option to requeue or discard
@@ -841,13 +846,13 @@ sequenceDiagram
        G -->|Yes| H[Basic.Nack + Requeue]
        G -->|No| I[Basic.Reject to DLX]
        
-       classDef decision fill:#bbf,stroke:#333;
-       classDef action fill:#bfb,stroke:#333;
-       classDef result fill:#ffa,stroke:#333;
+       classDef decision fill:#bbf,stroke:#333
+       classDef action fill:#bfb,stroke:#333
+       classDef result fill:#ffa,stroke:#333
        
-       class B,E,G decision;
-       class A,C,D action;
-       class F,H,I result;
+       class B,E,G decision
+       class A,C,D action
+       class F,H,I result
    ```
 
 2. **Prefetch Settings**
